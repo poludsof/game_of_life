@@ -1,13 +1,10 @@
 #include <iostream>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL.h>
 #include<unistd.h>
 
-void draw_square(SDL_Renderer *renderer, int x, int y) {
-//    std::cout << "draw " << x << " " << y << std::endl;
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255 );
-    SDL_Rect rect = {(x * 20) + 1, (y * 20) + 1, 19, 19};
-    SDL_SetRenderDrawColor( renderer, 0, 0, 255, 255 );
+void draw_square(SDL_Renderer *renderer, int x, int y, int scale, int size, int r, int g, int b) {
+    SDL_Rect rect = {(x * scale) + 1, (y * scale) + 1, size - 1, size - 1};
+    SDL_SetRenderDrawColor( renderer, r, g, b, 255);
     SDL_RenderFillRect( renderer, &rect);
 }
 
@@ -61,11 +58,11 @@ int get_number_of_neighbors(int x, int y, const int pole[40][26]) {
     return count;
 }
 
-void draw_pole(SDL_Renderer *render, const int pole[][26]) {
+void draw_pole(SDL_Renderer *renderer, const int pole[][26], int r, int g, int b) {
     for (int x = 0; x < 40; ++x) {
         for (int y = 0; y < 26; ++y) {
             if (pole[x][y] == 1) {
-                draw_square(render, x, y);
+                draw_square(renderer, x, y, 20, 19, r, g, b);
             }
         }
     }
@@ -89,12 +86,7 @@ void update_field(int pole[40][26]) {
             N = get_number_of_neighbors(x, y, copy_pole);
             if (N < 2) { pole[x][y] = 0; }
             if (N > 3) { pole[x][y] = 0; }
-            if (N == 3) {
-                pole[x][y] = 1;
-            }
-//            if (N != 0) {
-//                std::cout << x << " : " << y << " N: " << N << std::endl;
-//            }
+            if (N == 3) { pole[x][y] = 1; }
         }
     }
 }
@@ -102,6 +94,58 @@ void update_field(int pole[40][26]) {
 void get_up_left_index(int *x, int *y) {
     *x /= 20;
     *y /= 20;
+}
+
+void draw_color_menu(SDL_Renderer *renderer) {
+    SDL_SetRenderDrawColor(renderer, 152, 195, 255, 255);
+
+    for (int i = 200; i <= 600; ++i) // up
+        SDL_RenderDrawLine(renderer, i, 200, i, 201);
+    for (int i = 200; i <= 600; ++i) // down
+        SDL_RenderDrawLine(renderer, i, 280, i, 281);
+
+    for (int i = 201; i < 280; ++i) {
+        for (int j = 200; j < 601; j += 80)
+            SDL_RenderDrawLine(renderer, j, i, j + 1, i);
+    }
+
+    // red
+    draw_square(renderer, 200, 200, 1, 80, 255, 50, 50);
+
+    //green
+    draw_square(renderer, 281, 200, 1, 80, 30, 255, 80);
+
+    // blue
+    draw_square(renderer, 361, 200, 1, 80, 30, 50, 255);
+
+    //white
+    draw_square(renderer, 441, 200, 1, 80, 200, 255, 255);
+
+    // yellow
+    draw_square(renderer, 521, 200, 1, 80, 240, 255, 50);
+}
+
+bool select_color(SDL_Event windowEvent, int *r, int *g, int *b) {
+    bool selected = false;
+    int x, y;
+    if (SDL_MOUSEBUTTONDOWN == windowEvent.type && SDL_BUTTON_LEFT == windowEvent.button.button) {
+
+        SDL_GetMouseState(&x, &y);
+
+        if (y > 200 && y < 280) {
+
+            selected = true;
+
+            if (x > 200 && x < 280) { *r = 255; *g = 50; *b = 50; }
+            else if (x > 281 && x < 360) { *r = 30; *g = 255; *b = 80; }
+            else if (x > 361 && x < 440) { *r = 30; *g = 50; *b = 255; }
+            else if (x > 441 && x < 520) { *r = 200; *g = 255; *b = 255; }
+            else if (x > 522 && x < 600) { *r = 240; *g = 255; *b = 50; }
+            else selected = false;
+        }
+    }
+
+    return selected;
 }
 
 int main() {
@@ -118,19 +162,33 @@ int main() {
     SDL_Event windowEvent;
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
 
-    pole[2][2] = 1;
-    pole[3][2] = 1;
-    pole[4][2] = 1;
+    bool drawing = false;
+    bool start_game = false;
+    bool choose_color = true;
+    int r, g, b;
 
-//    pole[5][2] = 1;
-    pole[2][5] = 1;
-    pole[3][5] = 1;
-    pole[4][5] = 1;
-    pole[5][5] = 1;
+    while (choose_color) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
 
-    auto start_game = true;
+        draw_color_menu(renderer);
 
-    while (true) {
+        SDL_RenderPresent(renderer);
+
+        if (select_color(windowEvent, &r, &g, &b)) {
+            drawing = true;
+            choose_color = false;
+        }
+
+        if (SDL_PollEvent(&windowEvent)) {
+            if (SDL_QUIT == windowEvent.type)
+                break;
+        }
+    }
+
+    SDL_Delay(800);
+
+    while (start_game || drawing) {
         if (SDL_PollEvent(&windowEvent)) {
             if (SDL_QUIT == windowEvent.type)
                 break;
@@ -146,7 +204,7 @@ int main() {
         for (int i = 0; i <= 520; i+= 20)
             SDL_RenderDrawLine(renderer, 0, i, 800, i);
 
-        if (start_game) {
+        if (drawing) {
             if (SDL_MOUSEBUTTONDOWN == windowEvent.type) {
                 if (SDL_BUTTON_LEFT == windowEvent.button.button) {
                     int x, y;
@@ -156,16 +214,26 @@ int main() {
                     pole[x][y] = 1;
                 }
                 if (SDL_BUTTON_RIGHT == windowEvent.button.button) {
-                    start_game = false;
+                    start_game = true;
+                    drawing = false;
                 }
             }
         }
-        else {
+        else if (start_game) {
             update_field(pole);
-            sleep(1);
-//            SDL_Delay(500);
+//            SDL_Delay(1500);
         }
-        draw_pole(renderer, pole);
+
+//        while (!SDL_WaitEvent(&windowEvent)) {
+            if (windowEvent.type == SDL_QUIT) {
+                break;
+            }
+//        }
+//        if (windowEvent.type == SDL_QUIT) {
+//            break;
+//        }
+
+        draw_pole(renderer, pole, r, g, b);
 
         SDL_RenderPresent(renderer);
 
