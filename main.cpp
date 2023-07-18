@@ -157,7 +157,7 @@ int main() {
         if (SDL_PollEvent(&windowEvent) && SDL_QUIT == windowEvent.type) { break; }
     }
 
-    SDL_Delay(1000);
+    SDL_Delay(700);
 
     while ((start_game || drawing)) {
 
@@ -173,7 +173,7 @@ int main() {
 
         // drawing a world
         if (drawing) {
-            if (SDL_MOUSEBUTTONDOWN == windowEvent.type) {
+            if (SDL_PollEvent(&windowEvent) && SDL_MOUSEBUTTONDOWN == windowEvent.type) {
 
                 if (SDL_BUTTON_LEFT == windowEvent.button.button) {
                     int x, y;
