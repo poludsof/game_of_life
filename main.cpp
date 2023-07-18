@@ -168,7 +168,7 @@ int main() {
     int r, g, b;
 
     while (choose_color) {
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 3, 15, 30, 255);
         SDL_RenderClear(renderer);
 
         draw_color_menu(renderer);
@@ -186,15 +186,15 @@ int main() {
         }
     }
 
-    SDL_Delay(800);
+    SDL_Delay(700);
 
-    while (start_game || drawing) {
+    while ((start_game || drawing)) {
         if (SDL_PollEvent(&windowEvent)) {
             if (SDL_QUIT == windowEvent.type)
                 break;
         }
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 3, 15, 30, 255);
         SDL_RenderClear(renderer);
 
         // grid
@@ -221,24 +221,19 @@ int main() {
         }
         else if (start_game) {
             update_field(pole);
-//            SDL_Delay(1500);
+            SDL_Delay(800);
         }
 
-//        while (!SDL_WaitEvent(&windowEvent)) {
-            if (windowEvent.type == SDL_QUIT) {
+        if (SDL_PollEvent(&windowEvent)) {
+            if (SDL_QUIT == windowEvent.type)
                 break;
-            }
-//        }
-//        if (windowEvent.type == SDL_QUIT) {
-//            break;
-//        }
+        }
 
         draw_pole(renderer, pole, r, g, b);
 
         SDL_RenderPresent(renderer);
 
     }
-    std::cout << "the end" << std::endl;
 
     SDL_DestroyWindow(window);
     SDL_Quit();
